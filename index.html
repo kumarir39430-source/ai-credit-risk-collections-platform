@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Credit Risk & Collections Platform</title>
+<style>
+:root{--bg:#0B0F19;--card:rgba(255,255,255,.04);--bd:rgba(255,255,255,.09);--blue:#3B82F6;--cyan:#22D3EE;--text:#E5ECF6;--mut:#8A98B3;--g:#34D399;--y:#FBBF24;--r:#F87171}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1000px 500px at 80% -10%,rgba(59,130,246,.18),transparent),var(--bg);color:var(--text);font-family:Inter,system-ui,"Segoe UI",sans-serif;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:26px;margin:0 0 4px}h1 span{color:var(--cyan)}
+.sub{color:var(--mut);margin:0 0 24px;font-size:14px}
+h2{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--cyan);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px;backdrop-filter:blur(10px);box-shadow:0 0 30px rgba(59,130,246,.06)}
+.grid{display:grid;gap:18px;margin-top:18px}
+.g2{grid-template-columns:1fr 1fr}
+@media(max-width:800px){.g2{grid-template-columns:1fr}}
+.flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+.step{flex:1;min-width:150px;padding:14px;border:1px solid var(--bd);border-radius:12px;background:rgba(59,130,246,.07);transition:.2s;cursor:default}
+.step:hover,.step.on{border-color:var(--cyan);box-shadow:0 0 18px rgba(34,211,238,.25)}
+.step b{display:block;font-size:14px}.step small{color:var(--mut)}
+.arrow{align-self:center;color:var(--blue);font-size:20px}
+.sl{margin-bottom:16px}.sl label{display:flex;justify-content:space-between;font-size:13px;color:var(--mut)}
+.sl label b{color:var(--text)}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.score{text-align:center;padding:10px 0}
+.pct{font-size:56px;font-weight:800;line-height:1}
+.badge{display:inline-block;margin-top:8px;padding:5px 16px;border-radius:99px;font-weight:700;font-size:13px}
+.shap-row{display:grid;grid-template-columns:130px 1fr 54px;gap:10px;align-items:center;font-size:12.5px;margin-bottom:10px}
+.track{position:relative;height:14px;background:rgba(255,255,255,.05);border-radius:7px}
+.mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--mut)}
+.bar{position:absolute;top:0;height:100%;border-radius:7px;transition:.25s}
+.note{color:var(--mut);font-size:12px;margin-top:6px}
+.term{background:#05080f;border:1px solid var(--bd);border-radius:12px;padding:14px;height:250px;overflow-y:auto;font:12.5px/1.6 Consolas,"Courier New",monospace}
+.term div{white-space:pre-wrap}
+.ok{color:var(--g)}.warn{color:var(--y)}.bad{color:var(--r)}.info{color:var(--cyan)}.dim{color:var(--mut)}
+button{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:8px 16px;font-weight:600;cursor:pointer}
+button:hover{background:#2563EB}
+.row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI Credit Risk <span>&amp; Collections</span> Platform</h1>
+  <p class="sub">Simulation dashboard. The scoring below is a transparent mock formula for demo purposes, not a trained GBDT model (NOT IMPLEMENTED YET).</p>
+
+  <div class="card">
+    <h2>System Overview</h2>
+    <div class="flow" id="flow">
+      <div class="step"><b>1. Data Ingestion</b><small>Customer profile, payment history, bureau data</small></div><div class="arrow">→</div>
+      <div class="step"><b>2. GBDT Prediction</b><small>Delinquency probability (simulated)</small></div><div class="arrow">→</div>
+      <div class="step"><b>3. SHAP Explainability</b><small>Per-feature risk drivers</small></div><div class="arrow">→</div>
+      <div class="step"><b>4. Collections Action</b><small>Auto reminder or human review</small></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h2>Live Risk Scoring Sandbox</h2>
+      <div class="sl"><label>Credit Score <b id="v-score"></b></label><input id="score" type="range" min="300" max="850" value="640"></div>
+      <div class="sl"><label>Credit Utilization <b id="v-util"></b></label><input id="util" type="range" min="0" max="100" value="55"></div>
+      <div class="sl"><label>Annual Income <b id="v-inc"></b></label><input id="inc" type="range" min="10000" max="200000" step="1000" value="45000"></div>
+      <div class="sl"><label>Missed Payments (12 mo) <b id="v-miss"></b></label><input id="miss" type="range" min="0" max="12" value="2"></div>
+      <div class="score"><div class="pct" id="pct"></div><div class="dim" style="font-size:12px">predicted delinquency risk</div><span class="badge" id="badge"></span></div>
+    </div>
+    <div class="card">
+      <h2>SHAP Feature Breakdown</h2>
+      <div id="shap"></div>
+      <div class="note">Bars show each feature's push on risk (log-odds) vs. the baseline. Red raises risk, green lowers it.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="row"><h2 style="margin:0">Agentic AI Workflow Logs</h2><button id="run">Run workflow on this customer</button></div>
+    <div class="term" id="term"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const sig = z => 1 / (1 + Math.exp(-z));
+const BASE = -0.5;
+let current = {};
+
+function compute(){
+  const score = +$('score').value, util = +$('util').value, inc = +$('inc').value, miss = +$('miss').value;
+  const f = [
+    ['Credit Score',        (700 - score) / 100 * 0.9],
+    ['Credit Utilization',  (util - 30) / 100 * 2.0],
+    ['Annual Income',       (50000 - inc) / 50000 * 0.6],
+    ['Missed Payments',     miss * 0.55 - 0.3]
+  ];
+  const z = BASE + f.reduce((s, x) => s + x[1], 0);
+  return { score, util, inc, miss, f, p: sig(z) };
+}
+
+function level(p){
+  if (p < 0.30) return ['Low Risk', 'var(--g)', 'rgba(52,211,153,.15)'];
+  if (p < 0.60) return ['Medium Risk', 'var(--y)', 'rgba(251,191,36,.15)'];
+  return ['High Risk', 'var(--r)', 'rgba(248,113,113,.15)'];
+}
+
+function render(){
+  current = compute();
+  const { score, util, inc, miss, f, p } = current;
+  $('v-score').textContent = score;
+  $('v-util').textContent = util + '%';
+  $('v-inc').textContent = '$' + inc.toLocaleString();
+  $('v-miss').textContent = miss;
+  const [name, col, bg] = level(p);
+  $('pct').textContent = (p * 100).toFixed(1) + '%';
+  $('pct').style.color = col;
+  $('badge').textContent = name;
+  $('badge').style.cssText = `color:${col};background:${bg};border:1px solid ${col}`;
+  const max = Math.max(1.5, ...f.map(x => Math.abs(x[1])));
+  $('shap').innerHTML = f.slice().sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).map(([n, v]) => {
+    const w = Math.abs(v) / max * 50, c = v >= 0 ? 'var(--r)' : 'var(--g)';
+    const pos = v >= 0 ? `left:50%;width:${w}%` : `right:50%;width:${w}%`;
+    return `<div class="shap-row"><span>${n}</span><div class="track"><div class="mid"></div><div class="bar" style="${pos};background:${c}"></div></div><span style="text-align:right;color:${c}">${v >= 0 ? '+' : ''}${v.toFixed(2)}</span></div>`;
+  }).join('');
+}
+
+function log(msg, cls = ''){
+  const t = $('term'), d = document.createElement('div');
+  const ts = new Date().toLocaleTimeString([], { hour12: false });
+  d.className = cls;
+  d.textContent = `[${ts}] ${msg}`;
+  t.appendChild(d);
+  t.scrollTop = t.scrollHeight;
+  while (t.children.length > 80) t.removeChild(t.firstChild);
+}
+
+function act(id, p, topDriver){
+  const pc = (p * 100).toFixed(0) + '%';
+  if (p < 0.30) { log(`${id} risk=${pc} → no action, monitoring only`, 'ok'); }
+  else if (p < 0.60) {
+    log(`${id} risk=${pc} → AGENT: reminder email drafted & queued (driver: ${topDriver})`, 'warn');
+  } else {
+    log(`${id} risk=${pc} → ESCALATE: human review requested (driver: ${topDriver})`, 'bad');
+  }
+}
+
+function runWorkflow(id){
+  const steps = [...document.querySelectorAll('.step')];
+  const c = compute();
+  const top = c.f.slice().sort((a, b) => b[1] - a[1])[0][0];
+  log(`${id} ingest: score=${c.score}, util=${c.util}%, missed=${c.miss}`, 'info');
+  steps.forEach((s, i) => setTimeout(() => {
+    steps.forEach(x => x.classList.remove('on'));
+    s.classList.add('on');
+    if (i === 1) log(`${id} model: delinquency probability ${(c.p * 100).toFixed(1)}%`, 'info');
+    if (i === 2) log(`${id} shap: top risk driver = ${top}`, 'info');
+    if (i === 3) act(id, c.p, top);
+  }, i * 600));
+  setTimeout(() => steps.forEach(x => x.classList.remove('on')), 3000);
+}
+
+['score', 'util', 'inc', 'miss'].forEach(i => $(i).addEventListener('input', render));
+$('run').addEventListener('click', () => runWorkflow('CUST-SANDBOX'));
+
+// Background simulation of other customers
+setInterval(() => {
+  const p = Math.random(), id = 'CUST-' + (1000 + Math.floor(Math.random() * 9000));
+  const drivers = ['Missed Payments', 'Credit Utilization', 'Credit Score', 'Annual Income'];
+  act(id, p, drivers[Math.floor(Math.random() * 4)]);
+}, 2800);
+
+render();
+log('Agent workflow engine started (simulation)', 'info');
+</script>
+</body>
+</html>
